@@ -22,14 +22,11 @@ Then /I should see "(.*)" before "(.*)"/ do |e1, e2|
   expect(/[\s\S]*#{e1}[\s\S]*#{e2}/).to match(page.body)
 end
 
-# Make it easier to express checking or unchecking several boxes at once
-#  "When I uncheck the following ratings: PG, G, R"
-#  "When I check the following ratings: G"
 
-Then /I should (not )?see movies with titles: (.*)$/ do |not_see, movies_list|
+Then /I should (not )?see movies with titles: (.*)$/ do |display, movies_list|
   movies = movies_list.split(', ')
   movies.each do |movie|
-    if not_see.nil?
+    if display.nil?
       expect(page).to have_content(movie)
     else
       expect(page).not_to have_content(movie)
@@ -37,17 +34,27 @@ Then /I should (not )?see movies with titles: (.*)$/ do |not_see, movies_list|
   end
 end
 
+# Make it easier to express checking or unchecking several boxes at once
+#  "When I uncheck the following ratings: PG, G, R"
+#  "When I check the following ratings: G"
 
 When /I (un)?check the following ratings: (.*)/ do |uncheck, rating_list|
   # HINT: use String#split to split up the rating_list, then
   #   iterate over the ratings and reuse the "When I check..." or
   #   "When I uncheck..." steps in lines 89-95 of web_steps.rb
   rating_list.split(/,\s*/).each do |rating|
-    uncheck ? uncheck("ratings[#{rating}]") : check("ratings[#{rating}]")
+    if uncheck 
+      uncheck("ratings[#{rating}]")
+    else
+      check("ratings[#{rating}]")
+    end
   end
 end
 
 Then /I should see all the movies/ do
   # Make sure that all the movies in the app are visible in the table
-  expect(page).to have_xpath("//tr", count: 11)
+  # count the number of movies in the database
+  num_movies = Movie.count
+  num_rows = page.all('table#movies tbody tr').count
+  num_rows.should == num_movies
 end
